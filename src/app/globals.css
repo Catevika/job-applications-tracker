@@ -1,21 +1,69 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@plugin 'tailwind-scrollbar' {
+	nocompatible: true;
+	preferredstrategy: 'pseudoelements';
+}
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+	--background: var(--color-slate-50);
+	--foreground: var(--color-slate-900);
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+	:root {
+		--background: var(--color-slate-900);
+		--foreground: var(--color-slate-50);
+		--primary: var(--color-fuchsia-950);
+	}
+}
+
+html {
+	overflow-y: scroll;
+	scrollbar-width: none;
+}
+
+div {
+	-ms-overflow-style: auto;
+	scrollbar-width: auto;
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+	color: var(--foreground);
+	background: var(--background);
+	font-family: var(--font-noto-sans), Arial, Helvetica, sans-serif;
+	font-size: large;
+	max-width: 1440px;
+	margin: 0 auto;
+}
+
+code {
+	font-family: var(--font-noto-sans-mono), monospace;
+}
+
+input::placeholder {
+	outline: solid 1px transparent;
+	height: 2rem;
+}
+
+input[type='date' i]::-webkit-calendar-picker-indicator {
+	filter: invert(1);
+}
+
+.react-datepicker-popper {
+	z-index: 20 !important;
+}
+
+#_next {
+	background: var(--background);
+}
+
+.cl-userButtonPopoverMain,
+.cl-userButtonPopoverFooter {
+	background: var(--primary) !important;
+}
+
+.cl-userButtonPopoverActions {
+	background: var(--background) !important;
+	border: 1px solid var(--primary) !important;
 }
