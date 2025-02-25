@@ -3,22 +3,24 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
 model Application {
-  id               Int       @id @default(autoincrement())
-  applicationId    Int       @unique
-  companyName      String
-  jobTitle         String
-  applicationDate  DateTime
-  applicationMethod String
-  status           String
-  nextStep         String?
-  followUpDate     DateTime?
-  notes            String?
+  applicationId     String    @id @default(uuid())
+  companyName       String    @db.VarChar(255)
+  applicationLink   String    @db.VarChar(255)
+  contactEmail      String    @db.VarChar(255)
+  jobTitle          String    @db.VarChar(255)
+  jobDescription    String    @db.VarChar(255)
+  applicationDate   DateTime  @default(now())
+  applicationMethod String    @db.VarChar(255)
+  status            String    @db.VarChar(255)
+  nextStep          String?   @db.VarChar(255)
+  followUpDate      DateTime?
+  notes             String?   @db.VarChar(255)
 
   @@map("applications")
 }
