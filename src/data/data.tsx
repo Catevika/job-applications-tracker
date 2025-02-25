@@ -1,0 +1,3 @@
+export const rowTitles = ["Company Name", "Application Link", "Contact Email", "Job Title", "Job Description", "Application Date", "Application Method", "Status", "Next Step", "Follow-up Date", "Notes", "Edit", "Delete"];
+
+export const rowTitlesForm = ["Application Id", "Company Name", "Application Link", "Contact Email", "Job Title", "Job Description", "Application Date", "Application Method", "Status", "Next Step", "Follow-up Date", "Notes"];
