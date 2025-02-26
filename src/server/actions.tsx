@@ -15,9 +15,10 @@ if (!baseUrl) {
 export async function getApplications() {
   try {
     const applications = await prisma.application.findMany({
-      orderBy: {
-        applicationId: 'desc',
-      },
+      orderBy: [
+        { applicationDate: 'desc' },
+        { companyName: 'asc' }
+      ],
     });
     return applications;
   } catch (error) {
@@ -40,7 +41,7 @@ export async function getApplicationById(applicationId: string) {
 }
 
 // Create a new application
-export async function createNewApplication(data: FormData): Promise<{ success: boolean; application: Application; redirectTo: string; }> {
+export async function createNewApplication(data: FormData): Promise<{ success: boolean; application?: Application; redirectTo: string; error?: string; }> {
   try {
     const newApplication = await prisma.application.create({
       data: {
@@ -64,16 +65,18 @@ export async function createNewApplication(data: FormData): Promise<{ success: b
     return { success: true, application: newApplication, redirectTo: '/applications' };
   } catch (error) {
     console.error(error);
-    throw new Error('Failed to create application');
+    return { success: false, error: "Failed to create application", redirectTo: '/applications' };
   }
 }
 
 
 // Update an existing application
-export async function updateApplication(applicationId: string, data: FormData): Promise<{ success: boolean; application: Application; redirectTo: string; }> {
+export async function updateApplication(applicationId: string, data: FormData): Promise<{
+  success: boolean; application?: Application; redirectTo: string; error?: string;
+}> {
   const application = await getApplicationById(applicationId);
   if (!application) {
-    throw new Error('Application not found');
+    return { success: false, error: "Application not found", redirectTo: '/applications' };
   }
 
   try {
@@ -98,10 +101,10 @@ export async function updateApplication(applicationId: string, data: FormData): 
         notes: data.get('Notes')?.toString() ?? application.notes,
       },
     });
-    return { success: true, application: updatedApplication, redirectTo: '/applications' };
+    return { success: true, application: updatedApplication, redirectTo: "/applications" };
   } catch (error) {
     console.error(error);
-    throw new Error('Failed to update application');
+    return { success: false, error: "Failed to update application", redirectTo: '/applications' };
   }
 };
 

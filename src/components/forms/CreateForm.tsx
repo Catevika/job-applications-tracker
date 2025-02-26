@@ -4,59 +4,34 @@ import PendingButton from "@/components/buttons/PendingButton";
 import { rowTitlesForm } from "@/data/data";
 import { createNewApplication } from "@/server/actions";
 import { toISOString } from "@/server/utils/formatDate";
-import type { Application } from '@prisma/client';
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import Form from "next/form";
-import { useRouter } from 'next/navigation';
-import { useCallback, useState } from 'react';
+import { useRouter } from "next/navigation";
+import { useCallback, useState } from "react";
 
 const CreateForm = () => {
-  const queryClient = useQueryClient();
   const router = useRouter();
   const [isPending, setIsPending] = useState(false);
-
-  // Initialize date states with null values
   const [applicationDate, setApplicationDate] = useState<string | null>(null);
   const [followUpDate, setFollowUpDate] = useState<string | null>(null);
 
   const mutation = useMutation({
     mutationFn: async (formData: FormData) => {
-      // Convert dates to ISO strings before submitting
       if (applicationDate) {
-        formData.set('Application Date', toISOString(applicationDate));
+        formData.set("Application Date", toISOString(applicationDate));
       }
       if (followUpDate) {
-        formData.set('Follow-up Date', toISOString(followUpDate));
+        formData.set("Follow-up Date", toISOString(followUpDate));
       }
       return await createNewApplication(formData);
     },
-    onMutate: async (formData: FormData) => {
-      await queryClient.cancelQueries({ queryKey: ["applications"] });
-
-      const newApplication = Object.fromEntries(formData.entries());
-
-      queryClient.setQueryData(["applications"], (oldApplications: Application[] = []) => [
-        ...oldApplications,
-        newApplication,
-      ]);
-    },
-    onError: (error, variables) => {
+    onError: (error) => {
       console.error("Mutation error:", error);
-      queryClient.setQueryData(["applications"], (oldApplications: Application[] = []) => {
-        const newApplication = Object.fromEntries(variables.entries());
-        return oldApplications.filter(
-          (app: Application) =>
-            app.applicationId !== newApplication.applicationId
-        );
-      });
+      setIsPending(false);
     },
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ["applications"] });
       setIsPending(false);
       router.push(result.redirectTo);
-    },
-    onSettled: () => {
-      setIsPending(false);
     },
   });
 
@@ -65,13 +40,19 @@ const CreateForm = () => {
     mutation.mutate(formData);
   };
 
-  const handleApplicationDateChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setApplicationDate(e.target.value);
-  }, []);
+  const handleApplicationDateChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setApplicationDate(e.target.value);
+    },
+    []
+  );
 
-  const handleFollowUpDateChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setFollowUpDate(e.target.value);
-  }, []);
+  const handleFollowUpDateChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setFollowUpDate(e.target.value);
+    },
+    []
+  );
 
   return (
     <Form
@@ -80,16 +61,19 @@ const CreateForm = () => {
     >
       {rowTitlesForm.map((rowTitle: string, index: number) => {
         let inputType = "text";
+        let dataType = "text";
         let value = undefined;
         let onChange = undefined;
 
         if (rowTitle === "Application Date") {
           inputType = "date";
-          value = applicationDate || '';
+          dataType = "MM/dd/yyyy";
+          value = applicationDate || "";
           onChange = handleApplicationDateChange;
         } else if (rowTitle === "Follow-up Date") {
           inputType = "date";
-          value = followUpDate || '';
+          dataType = "MM/dd/yyyy";
+          value = followUpDate || "";
           onChange = handleFollowUpDateChange;
         }
 
@@ -113,29 +97,39 @@ const CreateForm = () => {
             >
               {rowTitle}
             </label>
-            {rowTitle !== "Job Description" && rowTitle !== "Notes" ? <input
-              id={rowTitle}
-              name={rowTitle}
-              type={inputType}
-              datatype={(rowTitle === "Application Date" || rowTitle === "Follow-up Date") ? 'MM/dd/yyyy' : 'text'}
-              required={[
-                "Company Name",
-                "Job Title",
-                "Application Method",
-                "Status",
-              ].includes(rowTitle)}
-              autoComplete="off"
-              placeholder={rowTitle}
-              className={
-                rowTitle === "Application Id"
-                  ? "hidden"
-                  : rowTitle === 'Application Date' || rowTitle === 'Follow-up Date'
-                    ? 'flex-1 w-full text-fuchsia-200/60 bg-fuchsia-300/5 border border-slate-900 inset-shadow-sm inset-shadow-slate-950/60 p-2 rounded-md'
-                    : "flex-1 w-full text-fuchsia-200 bg-fuchsia-300/5 border border-slate-900 inset-shadow-sm inset-shadow-slate-950/60 p-2 rounded-md"
-              }
-              value={value}
-              onChange={onChange}
-            /> : <textarea id={rowTitle} name={rowTitle} placeholder={rowTitle} className="flex-1 w-full text-fuchsia-200 bg-fuchsia-300/5 border border-slate-900 inset-shadow-sm inset-shadow-slate-950/60 p-2 rounded-md resize-none scrollbar-thin scrollbar-thumb-rounded-md scrollbar-thumb-fuchsia-300 scrollbar-track-rounded-md scrollbar-track-fuchsia-950 overflow-auto" rows={2} />}
+            {rowTitle !== "Job Description" && rowTitle !== "Notes" ? (
+              <input
+                id={rowTitle}
+                name={rowTitle}
+                type={inputType}
+                datatype={dataType}
+                required={[
+                  "Company Name",
+                  "Job Title",
+                  "Application Method",
+                  "Status",
+                ].includes(rowTitle)}
+                autoComplete="off"
+                placeholder={rowTitle}
+                className={
+                  rowTitle === "Application Id"
+                    ? "hidden"
+                    : rowTitle === "Application Date" || rowTitle === "Follow-up Date"
+                      ? "flex-1 w-full text-fuchsia-200/60 bg-fuchsia-300/5 border border-slate-900 inset-shadow-sm inset-shadow-slate-950/60 p-2 rounded-md"
+                      : "flex-1 w-full text-fuchsia-200 bg-fuchsia-300/5 border border-slate-900 inset-shadow-sm inset-shadow-slate-950/60 p-2 rounded-md"
+                }
+                value={value}
+                onChange={onChange}
+              />
+            ) : (
+              <textarea
+                id={rowTitle}
+                name={rowTitle}
+                placeholder={rowTitle}
+                className="flex-1 w-full text-fuchsia-200 bg-fuchsia-300/5 border border-slate-900 inset-shadow-sm inset-shadow-slate-950/60 p-2 rounded-md resize-none scrollbar-thin scrollbar-thumb-rounded-md scrollbar-thumb-fuchsia-300 scrollbar-track-rounded-md scrollbar-track-fuchsia-950 overflow-auto"
+                rows={2}
+              />
+            )}
           </div>
         );
       })}

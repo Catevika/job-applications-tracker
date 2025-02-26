@@ -5,69 +5,41 @@ import { rowTitlesForm } from "@/data/data";
 import { updateApplication } from "@/server/actions";
 import { toISOString } from "@/server/utils/formatDate";
 import type { Application } from "@prisma/client";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import Form from "next/form";
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 const UpdateForm = ({ application }: { application: Application; }) => {
   const [isPending, setIsPending] = useState(false);
-  const queryClient = useQueryClient();
   const router = useRouter();
 
   const mutation = useMutation({
     mutationFn: (formData: FormData) =>
       updateApplication(application.applicationId, formData),
-    onMutate: async (formData: FormData) => {
-      await queryClient.cancelQueries({ queryKey: ["application", application.applicationId] });
-
-      const previousApplication = queryClient.getQueryData([
-        "application",
-        application.applicationId,
-      ]);
-
-      const updatedApplication = Object.fromEntries(formData.entries());
-
-      queryClient.setQueryData(
-        ["application", application.applicationId],
-        (oldApplication: Application | undefined) => ({
-          ...oldApplication,
-          ...updatedApplication,
-        })
-      );
-
-      return { previousApplication };
-    },
-    onError: (error, _variables, context) => {
-      console.error("Mutation error:", error);
-      if (context?.previousApplication) {
-        queryClient.setQueryData(
-          ["application", application.applicationId],
-          context.previousApplication
-        );
-      }
+    onError: (error) => {
+      console.error("Update error:", error);
+      setIsPending(false);
     },
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ["application", application.applicationId] });
       setIsPending(false);
       router.push(result.redirectTo);
-    },
-    onSettled: () => {
-      setIsPending(false);
     },
   });
 
   const handleFormAction = async (formData: FormData) => {
     setIsPending(true);
-    // Convert dates to ISO strings before submitting
+
     const applicationDate = formData.get('Application Date');
     if (applicationDate) {
       formData.set('Application Date', toISOString(applicationDate.toString()));
     }
+
     const followUpDate = formData.get('Follow-up Date');
     if (followUpDate) {
       formData.set('Follow-up Date', toISOString(followUpDate.toString()));
     }
+
     mutation.mutate(formData);
   };
 
@@ -78,8 +50,16 @@ const UpdateForm = ({ application }: { application: Application; }) => {
     >
       {Object.keys(application).map((field, index) => {
         let inputType = "text";
+        let placeholder = application[field as keyof Application]?.toString() ?? "";
+        let defaultValue = application[field as keyof Application]?.toString() ?? "";
         if (field === "applicationDate" || field === "followUpDate") {
           inputType = "date";
+          placeholder = application[field as keyof Application]
+            ? new Date(application[field as keyof Application] as string).toISOString().split('T')[0]
+            : "";
+          defaultValue = application[field as keyof Application]
+            ? new Date(application[field as keyof Application] as string).toISOString().split('T')[0]
+            : "";
         }
 
         return (
@@ -101,37 +81,36 @@ const UpdateForm = ({ application }: { application: Application; }) => {
             >
               {rowTitlesForm[index]}
             </label>
-            {rowTitlesForm[index] !== 'Job Description' && rowTitlesForm[index] !== 'Notes' ? <input
-              id={field}
-              name={rowTitlesForm[index]}
-              type={inputType}
-              required={[
-                "companyName",
-                "jobTitle",
-                "applicationMethod",
-                "status",
-              ].includes(field)}
-              autoComplete="off"
-              placeholder={
-                (field === "applicationDate" || field === "followUpDate")
-                  ? application[field as keyof Application]
-                    ? new Date(application[field as keyof Application] as string).toISOString().split('T')[0]
-                    : ""
-                  : application[field as keyof Application]?.toString() ?? ""
-              }
-              defaultValue={
-                (field === "applicationDate" || field === "followUpDate")
-                  ? application[field as keyof Application]
-                    ? new Date(application[field as keyof Application] as string).toISOString().split('T')[0]
-                    : ""
-                  : application[field as keyof Application]?.toString() ?? ""
-              }
-              className={
-                rowTitlesForm[index] === "Application Id"
-                  ? "hidden"
-                  : "flex-1 w-full text-fuchsia-200 bg-fuchsia-300/5 border border-slate-900 inset-shadow-sm inset-shadow-slate-950/60 p-2 rounded-md"
-              }
-            /> : <textarea id={field} name={rowTitlesForm[index]} placeholder={rowTitlesForm[index]} defaultValue={application[field as keyof Application]?.toString() ?? ""} className="flex-1 w-full text-fuchsia-200 bg-fuchsia-300/5 border border-slate-900 inset-shadow-sm inset-shadow-slate-950/60 p-2 rounded-md resize-none scrollbar-thin scrollbar-thumb-rounded-md scrollbar-thumb-fuchsia-300 scrollbar-track-rounded-md scrollbar-track-slate-900 overflow-auto" rows={2} />}
+            {rowTitlesForm[index] !== 'Job Description' && rowTitlesForm[index] !== 'Notes' ? (
+              <input
+                id={field}
+                name={rowTitlesForm[index]}
+                type={inputType}
+                required={[
+                  "companyName",
+                  "jobTitle",
+                  "applicationMethod",
+                  "status",
+                ].includes(field)}
+                autoComplete="off"
+                placeholder={placeholder}
+                defaultValue={defaultValue}
+                className={
+                  rowTitlesForm[index] === "Application Id"
+                    ? "hidden"
+                    : "flex-1 w-full text-fuchsia-200 bg-fuchsia-300/5 border border-slate-900 inset-shadow-sm inset-shadow-slate-950/60 p-2 rounded-md"
+                }
+              />
+            ) : (
+              <textarea
+                id={field}
+                name={rowTitlesForm[index]}
+                placeholder={rowTitlesForm[index]}
+                defaultValue={defaultValue}
+                className="flex-1 w-full text-fuchsia-200 bg-fuchsia-300/5 border border-slate-900 inset-shadow-sm inset-shadow-slate-950/60 p-2 rounded-md resize-none scrollbar-thin scrollbar-thumb-rounded-md scrollbar-thumb-fuchsia-300 scrollbar-track-rounded-md scrollbar-track-slate-900 overflow-auto"
+                rows={2}
+              />
+            )}
           </div>
         );
       })}
