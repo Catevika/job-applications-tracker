@@ -6,9 +6,9 @@ import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { enUS } from 'date-fns/locale';
 
-const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 if (!baseUrl) {
-  throw new Error('NEXT_PUBLIC_API_URL is not defined');
+  throw new Error('NEXT_PUBLIC_SUPABASE_URL is not defined');
 }
 
 // Fetch all applications
